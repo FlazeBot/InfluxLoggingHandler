@@ -54,29 +54,35 @@ class InfluxHandler(logging.Handler):
                 )
             )
         else:
-            point = (
-                Point(self.measurement)
-                .tag("bot", self.bot)
-                .tag("shard_id", self.shard_id)
-                .field("message", record.getMessage())
-                .time(
-                    int(record.created * 1e6),
-                    write_precision=WritePrecision.US,
+            exception = record.exc_info
+            if exception:
+                custom_msg = f"""[{record.asctime}] [{record.levelname:<8}] {record.name}: {record.getMessage()}\n""".join(traceback.format_tb(exception[2])).strip()
+                point = (
+                    Point(self.measurement)
+                    .tag("bot", self.bot)
+                    .tag("shard_id", self.shard_id)
+                    .tag("exception_type", exception[1].__class__.__name__)
+                    .field("message", custom_msg)
+                    .time(
+                        int(record.created * 1e6),
+                        write_precision=WritePrecision.US,
+                    )
                 )
-            )
+            else:
+                custom_msg = f"""[{record.asctime}] [{record.levelname:<8}] {record.name}: {record.getMessage()}"""
+                point = (
+                    Point(self.measurement)
+                    .tag("bot", self.bot)
+                    .tag("shard_id", self.shard_id)
+                    .field("message", custom_msg)
+                    .time(
+                        int(record.created * 1e6),
+                        write_precision=WritePrecision.US,
+                    )
+                )
 
         for tag, value in self._get_additional_tags(record):
             point = point.tag(tag, value)
-
-        exception = record.exc_info
-        if exception:
-            point = (
-                point.tag("exception", "1")
-                .tag("exception_type", exception[1].__class__.__name__)
-                .field(
-                    "traceback", "\n".join(traceback.format_tb(exception[2])).strip()
-                )
-            )
 
         self.write_api.write(self.bucket, self.org, point)
 
