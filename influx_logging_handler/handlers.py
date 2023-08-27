@@ -56,7 +56,7 @@ class InfluxHandler(logging.Handler):
         else:
             exception = record.exc_info
             if exception:
-                custom_msg = f"""[{record.asctime}] [{record.levelname:<8}] {record.name}: {record.getMessage()}\n""".join(traceback.format_tb(exception[2])).strip()
+                custom_msg = f"""[{record.asctime}] [{record.levelname:<8}] {record.name}: {record.getMessage()}\n""".join(traceback.format_exception(exception[2])).strip()
                 point = (
                     Point(self.measurement)
                     .tag("bot", self.bot)
