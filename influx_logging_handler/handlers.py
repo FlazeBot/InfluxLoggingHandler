@@ -9,20 +9,25 @@ from influxdb_client.client.write_api import SYNCHRONOUS, WriteOptions
 
 
 class InfluxHandler(logging.Handler):
-    def __init__(  # pylint: disable=too-many-arguments
-        self,
-        url: str,
-        org: str,
-        bucket: str,
-        token: str,
-        measurement: str = "logging",
-        write_options: WriteOptions = SYNCHRONOUS,
+    def __init__(
+            self,
+            url: str,
+            org: str,
+            bucket: str,
+            token: str,
+            bot: str,
+            shard_id: str,
+            measurement: str = "logging",
+            flaze: bool = False,
+            write_options: WriteOptions = SYNCHRONOUS,
     ) -> None:
-
+        self.flaze = flaze
         self.client = InfluxDBClient(url=url, token=token)
         self.write_api = self.client.write_api(write_options=write_options)
         self.org = org
         self.bucket = bucket
+        self.bot = bot
+        self.shard_id = shard_id
         self.measurement = measurement
         super().__init__()
 
@@ -33,20 +38,32 @@ class InfluxHandler(logging.Handler):
                 yield (key, value)
 
     def emit(self, record: logging.LogRecord) -> None:
-        point = (
-            Point(self.measurement)
-            .tag("logger", record.name)
-            .tag("level", record.levelname)
-            .tag("level_number", record.levelno)
-            .tag("filename", record.filename)
-            .tag("line_number", record.lineno)
-            .tag("function_name", record.funcName)
-            .field("message", record.getMessage())
-            .time(
-                int(record.created * 1e6),
-                write_precision=WritePrecision.US,
+        if not self.flaze:
+            point = (
+                Point(self.measurement)
+                .tag("logger", record.name)
+                .tag("level", record.levelname)
+                .tag("level_number", record.levelno)
+                .tag("filename", record.filename)
+                .tag("line_number", record.lineno)
+                .tag("function_name", record.funcName)
+                .field("message", record.getMessage())
+                .time(
+                    int(record.created * 1e6),
+                    write_precision=WritePrecision.US,
+                )
             )
-        )
+        else:
+            point = (
+                Point(self.measurement)
+                .tag("bot", self.bot)
+                .tag("shard_id", self.shard_id)
+                .field("message", record.getMessage())
+                .time(
+                    int(record.created * 1e6),
+                    write_precision=WritePrecision.US,
+                )
+            )
 
         for tag, value in self._get_additional_tags(record):
             point = point.tag(tag, value)
