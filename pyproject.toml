@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+target-version = ['py36', 'py37', 'py38', 'py39']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 120
+skip = []
+import_heading_stdlib = 'Standard library imports'
+import_heading_thirdparty = 'Third party imports'
+import_heading_firstparty = 'Local application imports'
+import_heading_localfolder = 'Local folder imports'
+known_first_party = ['influx_logging_handler']
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+# addopts = "--cov --show-capture=no"
+addopts = "-rP --cov"
+python_files = "test_*.py"
+
+[tool.coverage.run]
+branch = true
+command_line = '-m pytest'
+source = ['influx_logging_handler/']
+
+[tool.coverage.report]
+precision = 2
+fail_under = 100
+skip_covered = true
+show_missing = true
+skip_empty = true

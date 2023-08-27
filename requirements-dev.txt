@@ -1,0 +1,14 @@
+bandit==1.7.1
+black==21.12b0
+coverage[toml]==6.2
+flake8==4.0.1
+isort==5.10.1
+mypy==0.931
+pre-commit==2.16.0
+pylint==2.12.2
+pyparsing==3.0.6
+pytest==6.2.5
+pytest-cov==3.0.0
+safety==1.10.3
+typing-extensions==4.0.1; python_version < '3.8'
+vcrpy==4.1.1

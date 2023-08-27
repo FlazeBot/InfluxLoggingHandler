@@ -1,0 +1,73 @@
+stages:
+  - test
+  - build_and_release
+
+.test-script: &test-script
+  - pre-commit run --all-files
+  - coverage report
+
+.test-configuration: &test-configuration
+  stage: test
+  variables:
+    DOCKER_INFLUXDB_INIT_MODE: setup
+    DOCKER_INFLUXDB_INIT_USERNAME: testing
+    DOCKER_INFLUXDB_INIT_PASSWORD: aFingTestingPassword
+    DOCKER_INFLUXDB_INIT_ORG: testing
+    DOCKER_INFLUXDB_INIT_BUCKET: testing
+    DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: D_ongyBJAhWCckWehz4TDyuJnhgnl1zB9OVBNfbq0CN8Tal_BmbAO6u8_zKtxg1n_7y1V-0BNfDbhvs6JylcRA==
+  services:
+    - name: influxdb:latest
+  cache:
+    key: "$CI_JOB_NAME"
+    paths:
+      - .cache/pip
+      - venv/
+  before_script:
+    - python -m venv .venv
+    - source .venv/bin/activate
+    - pip3 install -r requirements.txt -r requirements-dev.txt
+  script:
+    - *test-script
+  coverage: '/^TOTAL.+?(\d+\.\d+)%$/'
+
+test:python:3.7:
+  <<: *test-configuration
+  image: python:3.7
+
+test:python:3.8:
+  <<: *test-configuration
+  image: python:3.8
+
+test:python:3.9:
+  <<: *test-configuration
+  image: python:3.9
+
+test:python:3.10:
+  <<: *test-configuration
+  image: python:3.10
+  script:
+    - *test-script
+    - coverage xml
+  artifacts:
+    reports:
+      cobertura: coverage.xml
+
+build_and_release:
+  stage: build_and_release
+  image: python:3.10
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+(.*)?$/'
+  needs:
+    - test:python:3.7
+    - test:python:3.8
+    - test:python:3.9
+    - test:python:3.10
+  before_script:
+    - python -m venv .venv
+    - source .venv/bin/activate
+    - pip3 install -r requirements.txt
+    - pip3 install build twine
+    - python -c "import os, sys, influx_logging_handler; sys.exit(0) if influx_logging_handler.__version__ == os.environ.get('CI_COMMIT_TAG') else sys.exit(1)"
+  script:
+    - python -m build
+    - twine upload dist/*
