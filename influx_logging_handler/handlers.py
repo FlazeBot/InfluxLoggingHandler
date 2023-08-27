@@ -15,10 +15,10 @@ class InfluxHandler(logging.Handler):
             org: str,
             bucket: str,
             token: str,
-            bot: str,
-            shard_id: str,
             measurement: str = "logging",
             flaze: bool = False,
+            bot: str = None,
+            shard_id: str = None,
             write_options: WriteOptions = SYNCHRONOUS,
     ) -> None:
         self.flaze = flaze

@@ -1,3 +1,0 @@
-[bandit]
-targets = influx_logging_handler/
-recursive = true
